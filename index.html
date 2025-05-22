@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Sfogliatore Graphic Novel</title>
   <style>
     body {
@@ -38,12 +38,10 @@
     }
 
     #viewer {
-/*       gap: 1rem;
- */      margin: auto;
+      margin: auto;
       max-width: 58%;
       background: #f0f0f0;
-/*       padding: 1rem;
- */      box-shadow: 0 0 20px rgba(0,0,0,0.2);
+      box-shadow: 0 0 20px rgba(0,0,0,0.2);
       flex-wrap: wrap;
       justify-content: center;
     }
@@ -85,8 +83,15 @@
     }
 
     @media (max-width: 768px) {
+      #viewer {
+        max-width: 90%;
+      }
       .page-container {
         flex: 1 1 100%;
+      }
+      /* Nascondi la seconda pagina su mobile */
+      .page-container:nth-child(2) {
+        display: none !important;
       }
     }
   </style>
@@ -96,10 +101,9 @@
 <h1 class="title" id="mainTitle">UnNamed</h1>
 
 <div class="gallery active" id="gallery">
-  <img src="Capitolo1_IlCodice/cover.jpg" alt="Il codice" class="cover" onclick="selectNovel('Capitolo1_IlCodice', 'page', 2, 7, 'Capitolo 1 | Il codice')">
-  <img src="Capitolo2_Listruzione/cover.jpg" alt="L'istruzione" class="cover" onclick="selectNovel('Capitolo2_Listruzione', 'page', 2, 10, 'Capitolo 2 | L\'istruzione')">
-  <img src="Capitolo3_DialogoConLoperatore/cover.jpg" alt="Dialogo con l'operatore" class="cover" onclick="selectNovel('Capitolo3_DialogoConLoperatore', 'page', 2, 10, 'Capitolo 3 | Dialogo con l'operatore')">
-
+  <img src="Capitolo1_IlCodice/cover.jpg" alt="Il codice" class="cover" onclick="selectNovel('Capitolo1_IlCodice', 'page', 3, 7, 'Capitolo 1 | Il codice')">
+  <img src="Capitolo2_Listruzione/cover.jpg" alt="L'istruzione" class="cover" onclick="selectNovel('Capitolo2_Listruzione', 'page', 3, 10, 'Capitolo 2 | L\'istruzione')">
+  <img src="Capitolo3_DialogoConLoperatore/cover.jpg" alt="Dialogo con l'operatore" class="cover" onclick="selectNovel('Capitolo3_DialogoConLoperatore', 'page', 3, 10, 'Capitolo 3 | Dialogo con l\'operatore')">
 </div>
 
 <div id="viewer">
@@ -109,9 +113,9 @@
 
 <div class="buttons" id="navButtons">
   <button onclick="goHome()">Raccolta capitoli</button>
-  <button onclick="prevPage()">⟵ Indietro</button>
+  <button id="btnPrev" onclick="prevPage()">⟵ Indietro</button>
   <span class="page-count" id="pageCounter">Pagina 1 / ?</span>
-  <button onclick="nextPage()">Avanti ⟶</button>
+  <button id="btnNext" onclick="nextPage()">Avanti ⟶</button>
 </div>
 
 <script>
@@ -130,7 +134,6 @@
     currentTitle = title;
     currentIndex = 0;
 
-    // Aggiorna titolo e URL
     document.getElementById('mainTitle').textContent = title;
     history.pushState(null, '', `#${encodeURIComponent(title.replace(/\s/g, '-').toLowerCase())}`);
 
@@ -154,35 +157,42 @@
   }
 
   function updatePages() {
-  const isMobile = window.innerWidth < 768;
-  const page1 = document.getElementById("page1");
-  const page2 = document.getElementById("page2");
+    const isMobile = window.innerWidth < 768;
+    const page1 = document.getElementById("page1");
+    const page2 = document.getElementById("page2");
 
-  const page1Index = currentIndex + 1;
-  const src1 = `${currentFolder}/${filenamePrefix}${formatPageNumber(page1Index)}.jpg`;
-  page1.src = src1;
+    const page1Index = currentIndex + 1;
+    const src1 = `${currentFolder}/${filenamePrefix}${formatPageNumber(page1Index)}.jpg`;
+    page1.src = src1;
+    page1.parentElement.style.display = "block";
 
-  const pageCountDisplay = document.getElementById("pageCounter");
-  const displayPage = Math.min(page1Index, totalPages);
-  pageCountDisplay.textContent = `Pagina ${displayPage} / ${totalPages}`;
+    const pageCountDisplay = document.getElementById("pageCounter");
+    pageCountDisplay.textContent = `Pagina ${page1Index} / ${totalPages}`;
 
-  if (isMobile) {
-    page2.style.display = "none";
-  } else {
-    const page2Index = currentIndex + 2;
-    if (page2Index <= totalPages) {
-      const src2 = `${currentFolder}/${filenamePrefix}${formatPageNumber(page2Index)}.jpg`;
-      page2.src = src2;
-      page2.style.display = "block";
+    if (isMobile) {
+      // Mobile: mostra solo pagina 1, nascondi pagina 2
+      page2.parentElement.style.display = "none";
+
+      document.getElementById('btnPrev').disabled = (currentIndex === 0);
+      document.getElementById('btnNext').disabled = (currentIndex >= totalPages - 1);
     } else {
-      page2.src = "";
-      page2.style.display = "none"; // Nascondi pagina destra se non esiste
+      // Desktop: due pagine affiancate
+      const page2Index = currentIndex + 2;
+      if (page2Index <= totalPages) {
+        const src2 = `${currentFolder}/${filenamePrefix}${formatPageNumber(page2Index)}.jpg`;
+        page2.src = src2;
+        page2.parentElement.style.display = "block";
+      } else {
+        page2.src = "";
+        page2.parentElement.style.display = "none";
+      }
+
+      document.getElementById('btnPrev').disabled = (currentIndex === 0);
+      document.getElementById('btnNext').disabled = (currentIndex >= totalPages - 2);
     }
+
+    history.replaceState(null, '', `#${encodeURIComponent(currentTitle.replace(/\s/g, '-').toLowerCase())}/p${page1Index}`);
   }
-
-  history.pushState(null, '', `#${encodeURIComponent(currentTitle.replace(/\s/g, '-').toLowerCase())}/p${page1Index}`);
-}
-
 
   function nextPage() {
     const isMobile = window.innerWidth < 768;
