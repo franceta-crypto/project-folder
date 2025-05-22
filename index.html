@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Sfogliatore Graphic Novel</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f0f0f0;
+      margin: 0;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    .gallery, #viewer, .buttons {
+      display: none;
+    }
+
+    .gallery.active, #viewer.active, .buttons.active {
+      display: flex;
+    }
+
+    .gallery {
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1rem;
+    }
+
+    .cover {
+      width: 25%;
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      transition: transform 0.2s;
+    }
+
+    .cover:hover {
+      transform: scale(1.05);
+    }
+
+    #viewer {
+/*       gap: 1rem;
+ */      margin: auto;
+      max-width: 58%;
+      background: #f0f0f0;
+/*       padding: 1rem;
+ */      box-shadow: 0 0 20px rgba(0,0,0,0.2);
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .page-container {
+      flex: 1 1 45%;
+      min-width: 300px;
+    }
+
+    img.page {
+      width: 100%;
+      max-height: 600px;
+      object-fit: contain;
+    }
+
+    .buttons {
+      margin-top: 1rem;
+      justify-content: center;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 0.5rem 1rem;
+      margin: 0.5rem;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .title {
+      font-size: 1.5rem;
+      font-weight: bold;
+      margin-bottom: 1rem;
+    }
+
+    .page-count {
+      font-weight: bold;
+    }
+
+    @media (max-width: 768px) {
+      .page-container {
+        flex: 1 1 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<h1 class="title" id="mainTitle">UnNamed</h1>
+
+<div class="gallery active" id="gallery">
+  <img src="Capitolo 1 | Il codice/cover.jpg" alt="Il codice" class="cover" onclick="selectNovel('Capitolo 1 | Il codice', 'page', 2, 7, 'Capitolo 1 | Il codice')">
+  <img src="Capitolo 2 | L'istruzione/cover.jpg" alt="L'istruzione" class="cover" onclick="selectNovel('Capitolo 2 | L\'istruzione', 'page', 2, 10, 'Capitolo 2 | L\'istruzione')">
+  <img src="Capitolo 3 | Dialogo con l'operatore/cover.jpg" alt="L'istruzione" class="cover" onclick="selectNovel('Capitolo 3 | Dialogo con l\'operatore', 'page', 2, 10, 'Capitolo 2 | L\'istruzione')">
+
+</div>
+
+<div id="viewer">
+  <div class="page-container"><img id="page1" class="page" src="" alt="Pagina sinistra"></div>
+  <div class="page-container"><img id="page2" class="page" src="" alt="Pagina destra"></div>
+</div>
+
+<div class="buttons" id="navButtons">
+  <button onclick="goHome()">Raccolta capitoli</button>
+  <button onclick="prevPage()">⟵ Indietro</button>
+  <span class="page-count" id="pageCounter">Pagina 1 / ?</span>
+  <button onclick="nextPage()">Avanti ⟶</button>
+</div>
+
+<script>
+  let currentIndex = 0;
+  let currentFolder = '';
+  let filenamePrefix = '';
+  let padLength = 3;
+  let totalPages = 0;
+  let currentTitle = '';
+
+  function selectNovel(folder, prefix, pad, total, title) {
+    currentFolder = folder;
+    filenamePrefix = prefix;
+    padLength = pad;
+    totalPages = total;
+    currentTitle = title;
+    currentIndex = 0;
+
+    // Aggiorna titolo e URL
+    document.getElementById('mainTitle').textContent = title;
+    history.pushState(null, '', `#${encodeURIComponent(title.replace(/\s/g, '-').toLowerCase())}`);
+
+    document.getElementById('gallery').classList.remove('active');
+    document.getElementById('viewer').classList.add('active');
+    document.getElementById('navButtons').classList.add('active');
+
+    updatePages();
+  }
+
+  function goHome() {
+    document.getElementById('gallery').classList.add('active');
+    document.getElementById('viewer').classList.remove('active');
+    document.getElementById('navButtons').classList.remove('active');
+    document.getElementById('mainTitle').textContent = 'UnNamed';
+    history.pushState(null, '', '/');
+  }
+
+  function formatPageNumber(n) {
+    return String(n).padStart(padLength, '0');
+  }
+
+  function updatePages() {
+  const isMobile = window.innerWidth < 768;
+  const page1 = document.getElementById("page1");
+  const page2 = document.getElementById("page2");
+
+  const page1Index = currentIndex + 1;
+  const src1 = `${currentFolder}/${filenamePrefix}${formatPageNumber(page1Index)}.jpg`;
+  page1.src = src1;
+
+  const pageCountDisplay = document.getElementById("pageCounter");
+  const displayPage = Math.min(page1Index, totalPages);
+  pageCountDisplay.textContent = `Pagina ${displayPage} / ${totalPages}`;
+
+  if (isMobile) {
+    page2.style.display = "none";
+  } else {
+    const page2Index = currentIndex + 2;
+    if (page2Index <= totalPages) {
+      const src2 = `${currentFolder}/${filenamePrefix}${formatPageNumber(page2Index)}.jpg`;
+      page2.src = src2;
+      page2.style.display = "block";
+    } else {
+      page2.src = "";
+      page2.style.display = "none"; // Nascondi pagina destra se non esiste
+    }
+  }
+
+  history.pushState(null, '', `#${encodeURIComponent(currentTitle.replace(/\s/g, '-').toLowerCase())}/p${page1Index}`);
+}
+
+
+  function nextPage() {
+    const isMobile = window.innerWidth < 768;
+    const step = isMobile ? 1 : 2;
+    if (currentIndex + step < totalPages) {
+      currentIndex += step;
+      updatePages();
+    }
+  }
+
+  function prevPage() {
+    const isMobile = window.innerWidth < 768;
+    const step = isMobile ? 1 : 2;
+    if (currentIndex - step >= 0) {
+      currentIndex -= step;
+      updatePages();
+    }
+  }
+
+  window.addEventListener('resize', updatePages);
+</script>
+
+</body>
+</html>
